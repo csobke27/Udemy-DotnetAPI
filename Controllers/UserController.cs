@@ -1,5 +1,6 @@
 using DotnetAPI.Data;
 using DotnetAPI.Dtos;
+using DotnetAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DotnetAPI.Controllers;
@@ -13,36 +14,6 @@ public class UserController : ControllerBase
     {
         _dapper = new DataContextDapper(config);
     }
-
-    [HttpGet("TestConnection")]
-    public DateTime TestConnection()
-    {
-        var result = _dapper.LoadData<DateTime>("SELECT GETDATE() AS CurrentDateTime");
-        return result.FirstOrDefault();
-    }
-
-    
-    // [HttpGet("GetUsers/{testValue?}")]
-    // public string[] GetUsers(string? testValue)
-    // {
-    //     string[] responseArray = new string[]
-    //     {
-    //         "test1",
-    //         "test2",
-    //         "no test value provided"
-    //     };
-
-    //     if(!string.IsNullOrEmpty(testValue))
-    //     {
-    //         responseArray = new string[]
-    //         {
-    //             "test1",
-    //             "test2",
-    //             testValue
-    //         };
-    //     }
-    //     return responseArray;
-    // }
 
     [HttpGet("GetUsers")]
     public IEnumerable<User> GetUsers()
