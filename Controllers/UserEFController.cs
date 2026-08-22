@@ -22,6 +22,7 @@ public class UserEFController : ControllerBase
         }));
     }
 
+    // User Endpoints
     [HttpGet("GetUsers")]
     public IEnumerable<User> GetUsers()
     {
@@ -29,7 +30,7 @@ public class UserEFController : ControllerBase
         return result;
     }
 
-    [HttpGet("GetUsers/{userId}")]
+    [HttpGet("GetUser/{userId}")]
     public User GetSingleUser(int userId)
     {
         User? user = _entityFramework.Users.FirstOrDefault(u => u.UserId == userId);
@@ -75,7 +76,7 @@ public class UserEFController : ControllerBase
         throw new Exception("Failed to add user.");
     }
 
-    [HttpPut("DeleteUser")]
+    [HttpDelete("DeleteUser")]
     public IActionResult DeleteUser(int userId)
     {
         var existingUser = _entityFramework.Users.FirstOrDefault(u => u.UserId == userId);
@@ -90,5 +91,124 @@ public class UserEFController : ControllerBase
             return Ok();
         }
         throw new Exception("Failed to delete user.");
+    }
+
+    // Salary Endpoints
+    [HttpGet("GetUserSalary/{userId}")]
+    public UserSalary GetUserSalary(int userId)
+    {
+        UserSalary? userSalary = _entityFramework.UserSalary.FirstOrDefault(u => u.UserId == userId);
+        if(userSalary == null)
+        {
+            throw new Exception("User salary not found.");
+        }
+        return userSalary;
+    }
+
+    [HttpPut("EditUserSalary")]
+    public IActionResult EditUserSalary(UserSalary userSalary)
+    {
+        UserSalary? existingUserSalary = _entityFramework.UserSalary.FirstOrDefault(u => u.UserId == userSalary.UserId);
+        if (existingUserSalary == null)
+        {
+            throw new Exception("User salary not found.");
+        }
+
+        // existingUserSalary.Salary = userSalary.Salary;
+        // existingUserSalary.AvgSalary = userSalary.AvgSalary;
+        _mapper.Map(userSalary, existingUserSalary);
+        if(_entityFramework.SaveChanges() > 0)
+        {
+            return Ok();
+        }
+        throw new Exception("Failed to update user salary.");
+    }
+
+    [HttpPost("AddUserSalary")]
+    public IActionResult AddUserSalary(UserSalary userSalary)
+    {
+        _entityFramework.UserSalary.Add(userSalary);
+        if(_entityFramework.SaveChanges() > 0)
+        {
+            return Ok();
+        }
+        throw new Exception("Failed to add user salary.");
+    }
+
+    [HttpDelete("DeleteUserSalary")]
+    public IActionResult DeleteUserSalary(int userId)
+    {
+        var existingUserSalary = _entityFramework.UserSalary.FirstOrDefault(u => u.UserId == userId);
+        if (existingUserSalary == null)
+        {
+            throw new Exception("User salary not found.");
+        }
+
+        _entityFramework.UserSalary.Remove(existingUserSalary);
+        if(_entityFramework.SaveChanges() > 0)
+        {
+            return Ok();
+        }
+        throw new Exception("Failed to delete user salary.");
+    }
+
+    // Job Info Endpoints
+    [HttpGet("GetUserJobInfo/{userId}")]
+    public UserJobInfo GetUserJobInfo(int userId)
+    {
+        UserJobInfo? userJobInfo = _entityFramework.UserJobInfo.FirstOrDefault(u => u.UserId == userId);
+        if(userJobInfo == null)
+        {
+            throw new Exception("User job info not found.");
+        }
+        return userJobInfo;
+    }
+
+    [HttpPut("EditUserJobInfo")]
+    public IActionResult EditUserJobInfo(UserJobInfo userJobInfo)
+    {
+        UserJobInfo? existingUserJobInfo = _entityFramework.UserJobInfo.FirstOrDefault(u => u.UserId == userJobInfo.UserId);
+        if (existingUserJobInfo == null)
+        {
+            throw new Exception("User job info not found.");
+        }
+
+        // existingUserJobInfo.JobTitle = userJobInfo.JobTitle;
+        // existingUserJobInfo.Department = userJobInfo.Department;
+        _mapper.Map(userJobInfo, existingUserJobInfo);
+
+        if(_entityFramework.SaveChanges() > 0)
+        {
+            return Ok();
+        }
+        throw new Exception("Failed to update user job info.");
+    }
+
+    [HttpPost("AddUserJobInfo")]
+    public IActionResult AddUserJobInfo(UserJobInfo userJobInfo)
+    {
+        _entityFramework.UserJobInfo.Add(userJobInfo);
+        if(_entityFramework.SaveChanges() > 0)
+        {
+            return Ok();
+        }
+        throw new Exception("Failed to add user job info.");
+    }
+
+    [HttpDelete("DeleteUserJobInfo")]
+    public IActionResult DeleteUserJobInfo(int userId)
+    {
+        var existingUserJobInfo = _entityFramework.UserJobInfo.FirstOrDefault(u => u.UserId == userId);
+        if (existingUserJobInfo == null)
+        {
+            throw new Exception("User job info not found.");
+        }
+
+        _entityFramework.UserJobInfo.Remove(existingUserJobInfo);
+        if(_entityFramework.SaveChanges() > 0)
+        {
+            return Ok();
+        }
+        throw new Exception("Failed to delete user job info.");
     }
 }
