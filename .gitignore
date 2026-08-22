@@ -1,0 +1,19 @@
+## Build output
+bin/
+obj/
+
+## User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio Code
+.vscode/
+
+## Local development settings
+appsettings.Local.json
+
+## Operating system files
+.DS_Store
+Thumbs.db
