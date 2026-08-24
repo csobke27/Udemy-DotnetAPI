@@ -1,9 +1,12 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using DotnetAPI.Data;
 using DotnetAPI.Dtos;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DotnetAPI.Controllers
 {
@@ -47,7 +50,16 @@ namespace DotnetAPI.Controllers
 
             if(_dapper.ExecuteSQL(sqlAddAuth, new { Email = userForRegistrationDto.Email, PasswordHash = passwordHash, PasswordSalt = passwordSalt }))
             {
-                return Ok();
+                // insert user into Users table
+                string sqlAddUser = @"INSERT INTO TutorialAppSchema.Users (FirstName, LastName, Email, Gender, Active)
+                                    VALUES (@FirstName, @LastName, @Email, @Gender, @Active);";
+                if(_dapper.ExecuteSQL(sqlAddUser, new { FirstName = userForRegistrationDto.FirstName, LastName = userForRegistrationDto.LastName, Email = userForRegistrationDto.Email, Gender = userForRegistrationDto.Gender, Active = true }))
+                {
+                    return Ok();
+                } else
+                {
+                    return BadRequest("Failed to register user");
+                }
             }
             return BadRequest("Failed to register user");
         }
@@ -57,18 +69,24 @@ namespace DotnetAPI.Controllers
         {
             string sqlGetUserPassAndSalt = @"SELECT [PasswordHash], [PasswordSalt] FROM TutorialAppSchema.Auth WHERE Email = @Email;";
             var userAuthData = _dapper.LoadDataSingle<UserForLoginConfirmationDto>(sqlGetUserPassAndSalt, new { Email = userForLoginDto.Email });
+            if(userAuthData == null)
+            {
+                return Unauthorized("Invalid email or password");
+            }
+            
             if(userAuthData.PasswordHash == null || userAuthData.PasswordSalt == null)
             {
                 return Unauthorized("Invalid email or password");
             }
-
             byte[] attemptedPasswordHash = GetPasswordHash(userForLoginDto.Password, userAuthData.PasswordSalt);
             if(!attemptedPasswordHash.SequenceEqual(userAuthData.PasswordHash))
             {
                 return Unauthorized("Invalid email or password");
             }
 
-            return Ok("Login successful");
+            int userId = _dapper.LoadDataSingle<int>(@"SELECT [UserId] FROM TutorialAppSchema.Users WHERE Email = @Email;", new { Email = userForLoginDto.Email });
+
+            return Ok(new Dictionary<string, string> { { "token", CreateToken(userId) } });
         }
 
         private byte[] GetPasswordHash(string password, byte[] salt)
@@ -82,6 +100,31 @@ namespace DotnetAPI.Controllers
                 numBytesRequested: 256 / 8
             );
             return passwordHash;
+        }
+
+        private string CreateToken(int userId)
+        {
+            Claim[] claims = new Claim[]
+            {
+                new Claim("userId", userId.ToString())
+            };
+
+            string? tokenKey = _config.GetSection("AppSettings:TokenKey").Value;
+            if(string.IsNullOrEmpty(tokenKey))
+            {
+                throw new Exception("Token key is not configured");
+            }
+            SymmetricSecurityKey tokenKeyObj = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
+            SigningCredentials creds = new SigningCredentials(tokenKeyObj, SecurityAlgorithms.HmacSha512Signature);
+            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.Now.AddDays(1),
+                SigningCredentials = creds
+            };
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityToken token = tokenHandler.CreateJwtSecurityToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
     }
 }

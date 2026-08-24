@@ -18,10 +18,10 @@ namespace DotnetAPI.Data
             return dbConnection.Query<T>(sql);
         }
 
-        public T LoadDataSingle<T>(string sql, object? parameters)
+        public T? LoadDataSingle<T>(string sql, object? parameters)
         {
             IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-            return dbConnection.QuerySingle<T>(sql, parameters);
+            return dbConnection.QuerySingleOrDefault<T>(sql, parameters);
         }
 
         public bool ExecuteSQL(string sql, object? parameters)
