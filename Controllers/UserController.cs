@@ -43,7 +43,7 @@ public class UserController : ControllerBase
                     FROM TutorialAppSchema.Users
                     WHERE [UserId] = @UserId;";
 
-        var result = _dapper.LoadDataSingle<User>(sql, new { UserId = userId });
+        var result = _dapper.LoadDataSingleWithParams<User>(sql, new { UserId = userId });
         return result;
     }
 
@@ -101,7 +101,7 @@ public class UserController : ControllerBase
                     FROM TutorialAppSchema.UserSalary
                     WHERE [UserId] = @UserId;";
 
-        var result = _dapper.LoadDataSingle<UserSalary>(sql, new { UserId = userId });
+        var result = _dapper.LoadDataSingleWithParams<UserSalary>(sql, new { UserId = userId });
         return result;
     }
 
@@ -156,7 +156,7 @@ public class UserController : ControllerBase
                     FROM TutorialAppSchema.UserJobInfo
                     WHERE [UserId] = @UserId;";
 
-        var result = _dapper.LoadDataSingle<UserJobInfo>(sql, new { UserId = userId });
+        var result = _dapper.LoadDataSingleWithParams<UserJobInfo>(sql, new { UserId = userId });
         return result;
     }
 

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using DotnetAPI.Helpers;
 using Dapper;
+using AutoMapper;
+using DotnetAPI.Models;
 
 namespace DotnetAPI.Controllers
 {
@@ -14,11 +16,17 @@ namespace DotnetAPI.Controllers
     {
         private readonly DataContextDapper _dapper;
         private readonly AuthHelper _authHelper;
+        private readonly ReusableSql _reusableSql;
+        private readonly IMapper _mapper;
 
         public AuthController(IConfiguration config)
         {
             _dapper = new DataContextDapper(config);
             _authHelper = new AuthHelper(config);
+            _reusableSql = new ReusableSql(config);
+            _mapper = new Mapper(new MapperConfiguration(cfg => {
+                cfg.CreateMap<UserForRegistrationDto, UserComplete>();
+             }));
         }
 
         [AllowAnonymous]
@@ -40,24 +48,9 @@ namespace DotnetAPI.Controllers
 
             if (_authHelper.setPassword(new UserForLoginDto { Email = userForRegistrationDto.Email, Password = userForRegistrationDto.Password }))
             {
-                string userSql = @"EXEC TutorialAppSchema.spUser_Upsert
-                       @FirstName = @FirstNameParam,
-                       @LastName = @LastNameParam,
-                       @Email = @EmailParam,
-                       @Gender = @GenderParam,
-                       @Active = 1,
-                       @JobTitle = @JobTitleParam,
-                       @Department = @DepartmentParam,
-                       @Salary = @SalaryParam";
-                var userParameters = new DynamicParameters();
-                userParameters.Add("FirstNameParam", userForRegistrationDto.FirstName);
-                userParameters.Add("LastNameParam", userForRegistrationDto.LastName);
-                userParameters.Add("EmailParam", userForRegistrationDto.Email);
-                userParameters.Add("GenderParam", userForRegistrationDto.Gender);
-                userParameters.Add("JobTitleParam", userForRegistrationDto.JobTitle);
-                userParameters.Add("DepartmentParam", userForRegistrationDto.Department);
-                userParameters.Add("SalaryParam", userForRegistrationDto.Salary);
-                if (_dapper.ExecuteSQL(userSql, userParameters))
+                UserComplete userComplete = _mapper.Map<UserComplete>(userForRegistrationDto);
+                userComplete.Active = true;
+                if(_reusableSql.UpsertUser(userComplete))
                 {
                     return Ok();
                 }
@@ -83,7 +76,6 @@ namespace DotnetAPI.Controllers
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLoginDto)
         {
-            // string sqlGetUserPassAndSalt = @"SELECT [PasswordHash], [PasswordSalt] FROM TutorialAppSchema.Auth WHERE Email = @Email;";
             string sqlGetUserPassAndSalt = @"EXEC TutorialAppSchema.spLoginConfirmation_Get @Email = @EmailParam;";
             var userParameters = new DynamicParameters();
             userParameters.Add("EmailParam", userForLoginDto.Email);

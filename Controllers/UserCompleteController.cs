@@ -1,39 +1,42 @@
 using Dapper;
 using DotnetAPI.Data;
-using DotnetAPI.Dtos;
+using DotnetAPI.Helpers;
 using DotnetAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DotnetAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("[controller]")]
 public class UserCompleteController : ControllerBase
 {
-    DataContextDapper _dapper;
+    private readonly DataContextDapper _dapper;
+    private readonly ReusableSql _reusableSql;
     public UserCompleteController(IConfiguration config)
     {
         _dapper = new DataContextDapper(config);
+        _reusableSql = new ReusableSql(config);
     }
 
     // User Endpoints
     [HttpGet("GetUsers/{userId}/{isActive}")]
-    public IEnumerable<UserComplete> GetUsers(int userId, bool isActive)
+    public IEnumerable<UserComplete> GetUsers(int userId, bool? isActive)
     {
-        string sql = @"EXEC TutorialAppSchema.spUsers_Get";
+        var arguments = new List<string>();
         var parameters = new DynamicParameters();
         if(userId != 0)
         {
-            sql += " @UserId = @UserIdParam,";
+            arguments.Add("@UserId = @UserIdParam");
             parameters.Add("UserIdParam", userId);
         }
-        if(isActive)
+        if(isActive.HasValue)
         {
-            sql += " @Active = @ActiveParam,";
-            parameters.Add("ActiveParam", isActive);
+            arguments.Add("@Active = @ActiveParam");
+            parameters.Add("ActiveParam", isActive.Value);
         }
-        // Remove trailing comma if it exists
-        sql = _dapper.TrimEndComma(sql);
+        string sql = $"EXEC TutorialAppSchema.spUsers_Get {string.Join(", ", arguments)}";
 
         IEnumerable<UserComplete> result = _dapper.LoadDataWithParams<UserComplete>(sql, parameters);
         return result;
@@ -42,28 +45,7 @@ public class UserCompleteController : ControllerBase
     [HttpPut("UpsertUser")]
     public IActionResult UpsertUser(UserComplete user)
     {
-        string sql = @"EXEC TutorialAppSchema.spUser_Upsert
-                       @FirstName = @FirstNameParam,
-                       @LastName = @LastNameParam,
-                       @Email = @EmailParam,
-                       @Gender = @GenderParam,
-                       @Active = @ActiveParam,
-                       @JobTitle = @JobTitleParam,
-                       @Department = @DepartmentParam,
-                       @Salary = @SalaryParam,
-                       @UserId = @UserIdParam;";
-        var parameters = new DynamicParameters();
-        parameters.Add("FirstNameParam", user.FirstName);
-        parameters.Add("LastNameParam", user.LastName);
-        parameters.Add("EmailParam", user.Email);
-        parameters.Add("GenderParam", user.Gender);
-        parameters.Add("ActiveParam", user.Active);
-        parameters.Add("JobTitleParam", user.JobTitle);
-        parameters.Add("DepartmentParam", user.Department);
-        parameters.Add("SalaryParam", user.Salary);
-        parameters.Add("UserIdParam", user.UserId);
-
-        if(_dapper.ExecuteSQL(sql, parameters))
+        if(_reusableSql.UpsertUser(user))
         {
             return Ok();
         }

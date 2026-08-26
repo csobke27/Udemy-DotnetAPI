@@ -69,8 +69,7 @@ namespace DotnetAPI.Controllers
             }
             sql = _dapper.TrimEndComma(sql);
             
-            bool result = _dapper.ExecuteSQL(sql, parameters);
-            if (result)
+            if (_dapper.ExecuteSQL(sql, parameters))
             {
                 return Ok();
             }
@@ -84,8 +83,7 @@ namespace DotnetAPI.Controllers
             var parameters = new DynamicParameters();
             parameters.Add("UserIdParam", this.User.FindFirst("userId")?.Value);
             parameters.Add("PostIdParam", postId);
-            bool result = _dapper.ExecuteSQL(sql, parameters);
-            if (result)
+            if (_dapper.ExecuteSQL(sql, parameters))
             {
                 return Ok();
             }
