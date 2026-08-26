@@ -12,13 +12,25 @@ namespace DotnetAPI.Data
             _config = config;
         }
 
-        public IEnumerable<T> LoadData<T>(string sql, object? parameters = null)
+        public IEnumerable<T> LoadData<T>(string sql)
+        {
+            IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            return dbConnection.Query<T>(sql);
+        }
+
+        public T? LoadDataSingle<T>(string sql)
+        {
+            IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            return dbConnection.QuerySingleOrDefault<T>(sql);
+        }
+
+        public IEnumerable<T> LoadDataWithParams<T>(string sql, object? parameters = null)
         {
             IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             return dbConnection.Query<T>(sql, parameters);
         }
 
-        public T? LoadDataSingle<T>(string sql, object? parameters)
+        public T? LoadDataSingleWithParams<T>(string sql, object? parameters)
         {
             IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             return dbConnection.QuerySingleOrDefault<T>(sql, parameters);
@@ -43,6 +55,15 @@ namespace DotnetAPI.Data
         public void ExecuteProcedureMulti(string sql, IDbConnection dbConnection)
         {
             dbConnection.Execute(sql);
+        }
+
+        public string TrimEndComma(string sql)
+        {
+            if(sql.EndsWith(","))
+            {
+                sql = sql.TrimEnd(',');
+            }
+            return sql;
         }
 
     }

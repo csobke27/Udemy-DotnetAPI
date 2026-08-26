@@ -33,6 +33,7 @@ builder.Services.AddCors((options) =>
 });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<DataContextDapper>();
 
 string? tokenKey = builder.Configuration.GetSection("AppSettings:TokenKey").Value;
 if(string.IsNullOrEmpty(tokenKey))
