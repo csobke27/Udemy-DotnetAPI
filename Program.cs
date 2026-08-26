@@ -1,4 +1,7 @@
+using System.Text;
 using DotnetAPI.Data;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +34,37 @@ builder.Services.AddCors((options) =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
+string? tokenKey = builder.Configuration.GetSection("AppSettings:TokenKey").Value;
+if(string.IsNullOrEmpty(tokenKey))
+{
+    throw new Exception("Token key is not configured");
+}
+SymmetricSecurityKey tokenKeyObj = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
+
+TokenValidationParameters tokenValidationParameters = new TokenValidationParameters
+{
+    ValidateIssuerSigningKey = false,
+    IssuerSigningKey = tokenKeyObj,
+    ValidateIssuer = false,
+    ValidateAudience = false//,
+    // ClockSkew = TimeSpan.Zero
+};
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "Bearer";
+    options.DefaultChallengeScheme = "Bearer";
+}).AddJwtBearer("Bearer", options =>
+{
+    options.TokenValidationParameters = tokenValidationParameters;
+});
+
+// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//     .AddJwtBearer(options =>
+//     {
+//         options.TokenValidationParameters = tokenValidationParameters;
+//     });
+
 var app = builder.Build();
 
 
@@ -46,6 +80,9 @@ else
     app.UseCors("ProdCors");
     app.UseHttpsRedirection();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
